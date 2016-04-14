@@ -9,9 +9,8 @@ Distributor ID: Ubuntu
 Description:    Ubuntu 14.04.3 LTS
 Release:        14.04
 Codename:       trusty
-A. Node Controlle
+1.	THIẾT LẬP MÔI TRƯỜNG CHO CÁC NODE
 Thiết lập IP, hostname
-
 	Bạn có thể sửa IP phù hợp với máy bạn, tốt nhất là sử dụng theo IP mà chúng tôi hướng dẫn.
 	Thiết lập hostname với tên là controller
 echo "controller" > /etc/hostname
@@ -45,7 +44,6 @@ dns-nameservers 8.8.8.8
 
 EOF
 
-
 	Cấu hình file /etc/hosts để phân giản IP cho các node
 
 cat << EOF > /etc/hosts 
@@ -65,24 +63,17 @@ server 3.asia.pool.ntp.org iburst
 server 2.asia.pool.ntp.org iburst
 	Restart lại dịch vụ
 service chrony restart
-	Các server khác cài đặt tương tự và update ntp server là controller
-
-	
 	Khai báo các gói để cài đặt OpenStack Liberty
 apt-get -y install software-properties-common
 add-apt-repository -y cloud-archive:mitaka
 	
 	Update và khởi động lại node controller
 apt-get update -y && apt-get upgrade -y && apt-get dist-upgrade -y && init 6
-
-
-	Đăng nhập với IP mới của node controller
 	Cài đăt các gói phần mềm
-
 Cài đặt gói OpenStack Client
 apt-get install -y python-openstackclient
-
-	Cài đặt My SQL
+2.	CÀI ĐẶT TRÊN NODE CONTROLLER	
+a.	Cài đặt mysql 
 	Trong quá trình cài đặt yêu cầu nhập mật khẩu My SQL, sử dụng mật khẩu Cloud1o1iNET để thống nhất.
 apt-get -y install mariadb-server python-pymysql
 	Tạo file với nội dung sau
@@ -98,24 +89,20 @@ character-set-server = utf8
 EOF
 	Khởi động lại MYSQL
 service mysql restart
-	
-	
 	Cài đặt Message queue
-	Cài đặt gói rabbitmq
+b.	Cài đặt gói rabbitmq
 apt-get -y install rabbitmq-server
 	Tạo tài khoản openstack cho rabbitmq
 rabbitmqctl add_user openstack Cloud1o1iNET
 	Cấp quyền cho tài khoản openstack
 rabbitmqctl set_permissions openstack ".*" ".*" ".*"
 
-
-	Cài đặt memcache
+c.	Cài đặt memcache
 apt-get -y install memcached python-memcache
 	Mở file cấu hình vi /etc/memcached.conf thay đổi dòng -l 127.0.0.1 thành dòng dưới
 -l 10.60.0.220
 	Restart memcache
 service memcached restart
-
 
 	Cài đặt dịch vụ Keystone
 	Tạo database cho keystone
@@ -127,7 +114,7 @@ GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'localhost' IDENTIFIED BY 'Clou
 GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'%' IDENTIFIED BY 'Cloud1o1iNET';
 flush privileges;
 quit
-	Cài đặt Keystone
+d.	Cài đặt Keystone
 	Cấu hình không cho Keystone tự động khởi động.
 echo "manual" > /etc/init/keystone.override
 	Cài đặt các gói dành cho Keystone
@@ -331,12 +318,11 @@ openstack token issue
 	| project_id | c685a5fa3e474261b678aeb59332ce0d |
 	| user_id    | 818e335d15484101b6a2a69e5f9d4f61 |
 	+------------+----------------------------------+
-	
-	
-	Cài đặt GLANCE
+		
+e.	Cài đặt GLANCE
 
-	Glance chỉ cần cài đặt trên Controller
-	Tạo database và phân quyền bằng các lệnh dưới
+Glance chỉ cần cài đặt trên Controller
+Tạo database và phân quyền bằng các lệnh dưới
 	
 mysql -u root -pCloud1o1iNET
 
@@ -451,13 +437,9 @@ glance image-create --name "cirros" \
 --file cirros-0.3.4-x86_64-disk.img \
 --disk-format qcow2 --container-format bare \
 --visibility public --progress
-	Cài đặt NOVA
-
+	d. Cài đặt NOVA
 	Cài đặt NOVA trên CONTROLLER
 
-	Prerequisites
-
-	
 	Tạo database cho NOVA
 mysql -u root -pCloud1o1iNET
 
@@ -553,7 +535,7 @@ service nova-novncproxy restart
 	- Xóa file SQLite mặc định
 rm -f /var/lib/nova/nova.sqlite
 
-B. Cài đặt trên NOVA trên COMPUTE NODE
+3.	. CÀI ĐẶT TRÊN NOVA TRÊN COMPUTE NODE
 
 	Khai báo các gói để cài đặt OpenStack Liberty
 apt-get -y install software-properties-common add-apt-repository -y cloud-archive:mitaka
@@ -669,7 +651,7 @@ nova service-list
 	+----+------------------+------------+----------+---------+-------+----------------------------+-----------------+
 	
 	
-C. Cài đặt Neutron trên Controller Node
+4.	. CÀI ĐẶT NEUTRON TRÊN CONTROLLER NODE
 
 	Tạo database cho Neutron
 mysql -u root -pCloud1o1iNET
@@ -868,9 +850,9 @@ service neutron-l3-agent restart
 rm -f /var/lib/neutron/neutron.sqlite
 
 
-D. Cài đặt thành phần của neutron trên COMPUTE NODE
+5.	. CÀI ĐẶT THÀNH PHẦN CỦA NEUTRON TRÊN COMPUTE NODE
 
-	Cài đặt linuxbridge-agent trên node Compute
+a.	Cài đặt linuxbridge-agent trên node Compute
 apt-get -y install neutron-linuxbridge-agent
 
 	Sao lưu file /etc/neutron/neutron.conf
@@ -916,7 +898,7 @@ rabbit_password = Cloud1o1iNET
 [quotas]
 [ssl]
 
-	Configure the Linux bridge agent
+b.	Configure the Linux bridge agent
 
 	Sao lưu file /etc/neutron/plugins/ml2/linuxbridge_agent.ini
 mv /etc/neutron/plugins/ml2/linuxbridge_agent.ini /etc/neutron/plugins/ml2/linuxbridge_agent.ini.bak
@@ -955,140 +937,8 @@ password = Cloud1o1iNET
 service nova-compute restart
 	Khởi động lại Linux bridge agent
 service neutron-plugin-linuxbridge-agent restart
-E. Cai dat dashboad tren CONTROLLER
+6.	. Cai dat dashboad tren CONTROLLER
 
 apt-get -y install openstack-dashboard
 	Đăng nhập vào controller với IP 202.92.4.120/horizon
 	
-F. Cài đặt Ceilometer
-	Cài đặt NoSQL
-apt-get install -y mongodb-server mongodb-clients python-pymongo
-	Cấu hình bind trong mongodb
-sed -i "s/bind_ip = 127.0.0.1/bind_ip = 10.10.10.120/g" /etc/mongodb.conf
-	Restart lại MongoDB
-service mongodb restart
-	Tạo Ceilometer DB
-mongo --host 10.10.10.120 --eval '
-  db = db.getSiblingDB("ceilometer");
-  db.addUser({user: "ceilometer",
-  pwd: "Cloud1o1iNET",
-  roles: [ "readWrite", "dbAdmin" ]})'
-	Tạo user, endpoint, role, tenant cho Ceilometer
-openstack user create --domain default --password Cloud1o1iNET ceilometer
-openstack role add --project service --user ceilometer admin
-openstack service create --name ceilometer --description "Telemetry" metering
-openstack endpoint create --region RegionOne metering public http://controller:8777
-openstack endpoint create --region RegionOne metering public http://controller:8777
-openstack endpoint create --region RegionOne metering admin http://controller:8777
-	Cài đặt các gói ceilometer
-apt-get install -y ceilometer-api ceilometer-collector ceilometer-agent-central ceilometer-agent-notification ceilometer-alarm-evaluator ceilometer-alarm-notifier python-ceilometerclient
-	Backup file cấu  hình Ceilometer
-mv /etc/ceilometer/ceilometer.conf /etc/ceilometer/ceilometer.conf.bak
-	Tạo file vi /etc/ceilometer/ceilometer.conf với nội dung dưới
-[database]
-connection = mongodb://ceilometer:Cloud1o1iNET@10.10.10.120:27017/ceilometer
-[DEFAULT]
-rpc_backend = rabbit
-auth_strategy = keystone
-verbose = True
-
-[oslo_messaging_rabbit]
-rabbit_host = controller
-rabbit_userid = openstack
-rabbit_password = Cloud1o1iNET
-
-[keystone_authtoken]
-auth_uri = http://controller:5000
-auth_url = http://controller:35357
-auth_plugin = password
-project_domain_id = default
-user_domain_id = default
-project_name = service
-username = ceilometer
-password = Cloud1o1iNET
-
-[matchmaker_redis]
-[matchmaker_ring]
-[oslo_concurrency]
-[oslo_messaging_amqp]
-[oslo_messaging_qpid]
-[oslo_policy]
-
-[service_credentials]
-os_auth_url = http://controller:5000/v2.0
-os_username = ceilometer
-os_tenant_name = service
-os_password = Cloud1o1iNET
-os_endpoint_type = internalURL
-os_region_name = RegionOne
-	Restart lại dịch vụ
-service ceilometer-agent-central restart
-service ceilometer-agent-notification restart
-service ceilometer-api restart
-service ceilometer-collector restart
-service ceilometer-alarm-evaluator restart
-service ceilometer-alarm-notifier restart
-	Thêm nội dung dưới vào 2 file  /etc/glance/glance-api.conf và /etc/glance/glance-registry.conf
-[DEFAULT]
-...
-notification_driver = messagingv2
-rpc_backend = rabbit
-
-[oslo_messaging_rabbit]
-...
-rabbit_host = controller
-rabbit_userid = openstack
-rabbit_password = RABBIT_PASS
-	Restart lại GLANCE
-service glance-registry restart
-service glance-api restart
-	Cài đặt Ceilometer trên node computer
-apt-get install ceilometer-agent-compute
-	Backup file /etc/ceilometer/ceilometer.conf
-mv /etc/ceilometer/ceilometer.conf /etc/ceilometer/ceilometer.conf.bak
-	Tạo file `vi /etc/ceilometer/ceilometer.conf` với nội dung dưới
-[DEFAULT]
-rpc_backend = rabbit
-auth_strategy = keystone
-verbose = True
-
-[oslo_messaging_rabbit]
-rabbit_host = controller
-rabbit_userid = openstack
-rabbit_password = Cloud1o1iNET
-
-[keystone_authtoken]
-auth_uri = http://controller:5000
-auth_url = http://controller:35357
-auth_plugin = password
-project_domain_id = default
-user_domain_id = default
-project_name = service
-username = ceilometer
-password = Cloud1o1iNET
-
-[service_credentials]
-os_auth_url = http://controller:5000/v2.0
-os_username = ceilometer
-os_tenant_name = service
-os_password = Cloud1o1iNET
-os_endpoint_type = internalURL
-os_region_name = RegionOne
-
-[matchmaker_redis]
-[matchmaker_ring]
-[oslo_messaging_amqp]
-[oslo_messaging_qpid]
-[oslo_policy]
-
-	Thêm vào /etc/nova/nova.conf trên node compute với nội dung dưới
-[DEFAULT]
-...
-instance_usage_audit = True
-instance_usage_audit_period = hour
-notify_on_state_change = vm_and_task_state
-notification_driver = messagingv2
-	
-	Restart lại Ceilometer và nova-compute
-service ceilometer-agent-compute restart
-service nova-compute restart
